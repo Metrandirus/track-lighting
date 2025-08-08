@@ -1,46 +1,65 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import fs from 'fs';
 import path from 'path';
 
 import Layout from '../components/Layout';
-import SearchBar from '../components/SearchBar';  // 1. Импорт
+import SearchBar from '../components/SearchBar';
 import ProductCard from '../components/ProductCard';
-import Sidebar from '../components/Sidebar';
-import Cart from '../components/Cart';
 
 export async function getStaticProps() {
-  const json = fs.readFileSync(path.join(process.cwd(), 'data', 'products.json'), 'utf-8');
+  const filePath = path.join(process.cwd(), 'data', 'products.json');
+  const json = fs.readFileSync(filePath, 'utf-8');
   const products = JSON.parse(json);
   return { props: { products } };
 }
 
 export default function Home({ products }) {
-  const [search, setSearch] = useState('');        // 2. Состояние для строки поиска
+  // Состояние для строки поиска
+  const [search, setSearch] = useState('');
+  // Здесь можно хранить товары в корзине, если нужно
+  const [cart, setCart] = useState([]);
+
+  // Функция добавления товара в корзину
+  const handleAdd = (product) => {
+    setCart(prev => [...prev, product]);
+  };
 
   return (
     <Layout>
-      {selectedType => {
-        // 3. Фильтрация по типу и поиску
+      {(selectedType) => {
+        // Фильтрация по типу системы и по поиску по названию модели
         const filtered = products
           .filter(p => p.type === selectedType)
           .filter(p => p.model.toLowerCase().includes(search.toLowerCase()));
 
         return (
           <>
-            {/* 4. Вставляем нашу SearchBar */}
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              placeholder="Поиск по модели..."
-            />
+            {/* Блок заголовка с названием типа и строкой поиска */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+              <h2 className="text-2xl font-semibold mb-4 sm:mb-0">
+                {selectedType} системы
+              </h2>
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Поиск по модели..."
+              />
+            </div>
 
+            {/* Сетка карточек товаров */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filtered.length > 0 ? (
-                filtered.map(p => (
-                  <ProductCard key={p.id} product={p} />
+                filtered.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAdd={handleAdd}
+                  />
                 ))
               ) : (
-                <p className="text-gray-500">Ничего не найдено.</p>
+                <p className="col-span-full text-gray-500">
+                  По вашему запросу ничего не найдено.
+                </p>
               )}
             </div>
           </>
